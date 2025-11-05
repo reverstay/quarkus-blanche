@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  quarkus:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    container_name: blanche-service
+    ports:
+      - "8080:8080"
+    environment:
+      # --- Configuração HTTP ---
+      QUARKUS_HTTP_HOST: 0.0.0.0
+      QUARKUS_HTTP_PORT: 8080
+
+      # --- Banco de Dados Supabase (Pooler) ---
+      PGHOST: aws-1-sa-east-1.pooler.supabase.com
+      PGPORT: 5432
+      PGDATABASE: postgres
+      PGUSER: postgres.msqgqrcdhszgfytsgmnu
+      PGPASSWORD: 1Ra@123rA
+      PGSSLMODE: require
+      PG_SCHEMA: core
+
+      # --- SQLite (opcional, caso queira usar localmente) ---
+      SQLITE_PATH: ./banco-de-dados/SQLite/banco.sqlite
+
+      # --- Comportamento opcional ---
+      CHUNK_SIZE: 10000
+      TRUNCATE_DEST: "true"
+      BLOB_MODE: TEXT_BASE64
+
+      # --- Supabase REST (opcional) ---
+      SUPABASE_URL: https://msqgqrcdhszgfytsgmnu.supabase.co
+      SUPABASE_API_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcWdxcmNkaHN6Z2Z5dHNnbW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0Mjk4ODUsImV4cCI6MjA3MjAwNTg4NX0.YRRwGPK9l8y4D3uoJvEvyrXzhxRnceo9Q27iIiW9YWY
+
+    volumes:
+      # Cache Maven local (acelera builds)
+      - m2-cache:/root/.m2
+
+volumes:
+  m2-cache:
