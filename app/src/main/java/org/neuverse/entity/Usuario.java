@@ -2,17 +2,13 @@ package org.neuverse.entity;
 
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-/**
- * Entity mapping to {@code core.usuarios}.  Note the use of {@link LocalDate}
- * for the {@code data_admissao} column.
- */
 @Entity
 @Table(name = "usuarios", schema = "core")
 public class Usuario extends PanacheEntityBase {
+
     @Id
     @Column(name = "id", nullable = false)
     public UUID id;
@@ -20,21 +16,39 @@ public class Usuario extends PanacheEntityBase {
     @Column(name = "nome")
     public String nome;
 
-    @Column(name = "email", nullable = false)
+    @Column(name = "email", nullable = false/*, unique = true*/)
     public String email;
 
     @Column(name = "online", nullable = false)
-    public boolean online;
+    public Boolean online; // wrapper p/ permitir null no payload
 
     @Column(name = "cargo")
     public String cargo;
 
-    @Column(name = "cpf")
-    public String cpf;
+    @Column(name = "senha_hash")
+    public String senhaHash;
 
-    @Column(name = "data_admissao")
-    public LocalDate dataAdmissao;
+    @Column(name = "loja_id")
+    public UUID lojaId;
 
-    @Column(name = "criado_em", nullable = false)
-    public OffsetDateTime criado_em;
+    @Column(name = "criado_em")
+    public OffsetDateTime criadoEm;
+
+    @Column(name = "atualizado_em")
+    public OffsetDateTime atualizadoEm;
+
+    public static Usuario findByEmail(String email) {
+        return find("email", email).firstResult();
+    }
+
+    @PrePersist
+    void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (online == null) online = Boolean.FALSE;
+        if (criadoEm == null) criadoEm = OffsetDateTime.now();
+        atualizadoEm = criadoEm;
+    }
+
+    @PreUpdate
+    void preUpdate() { atualizadoEm = OffsetDateTime.now(); }
 }

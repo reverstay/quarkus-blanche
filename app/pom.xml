@@ -60,7 +60,17 @@
   <groupId>io.quarkus</groupId>
   <artifactId>quarkus-smallrye-openapi</artifactId>
 </dependency>
+<!-- BCrypt pra salvar senha com hash forte -->
+  <dependency>
+    <groupId>org.mindrot</groupId>
+    <artifactId>jbcrypt</artifactId>
+    <version>0.4</version>
+  </dependency>
 
+  <dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-mailer</artifactId>
+  </dependency>
     <!-- API REST (alias moderno do RESTEasy Reactive) -->
     <dependency>
       <groupId>io.quarkus</groupId>

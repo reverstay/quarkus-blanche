@@ -21,10 +21,7 @@ services:
       PGPASSWORD: 1Ra@123rA
       PGSSLMODE: require
       PG_SCHEMA: core
-
-      # --- SQLite (opcional, caso queira usar localmente) ---
-      SQLITE_PATH: ./banco-de-dados/SQLite/banco.sqlite
-
+      
       # --- Comportamento opcional ---
       CHUNK_SIZE: 10000
       TRUNCATE_DEST: "true"

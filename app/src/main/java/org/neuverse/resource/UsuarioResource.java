@@ -1,8 +1,11 @@
 package org.neuverse.resource;
-import  org.neuverse.entity.*;
+
+import io.quarkus.hibernate.orm.panache.Panache;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.*;
+import org.neuverse.entity.Usuario;
+
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -13,57 +16,77 @@ import java.util.UUID;
 public class UsuarioResource {
 
     @GET
-    public List<Usuario> listAll() {
-        return Usuario.listAll();
+    public List<Usuario> listAll(@QueryParam("email") String email) {
+        if (email != null && !email.isBlank()) {
+            Usuario u = Usuario.findByEmail(email);
+            return u == null ? List.of() : List.of(u);
+        }
+        return Usuario.list("order by criadoEm desc");
     }
 
-    @GET
-    @Path("/{id}")
+    @GET @Path("/{id}")
     public Response getById(@PathParam("id") UUID id) {
         Usuario usuario = Usuario.findById(id);
-        if (usuario == null) {
-            throw new NotFoundException();
-        }
+        if (usuario == null) throw new NotFoundException();
         return Response.ok(usuario).build();
     }
 
     @POST
     @Transactional
     public Response create(Usuario incoming, @Context UriInfo uriInfo) {
-        if (incoming == null) {
-            throw new BadRequestException("Corpo da requisição ausente.");
-        }
-        if (incoming.email == null || incoming.email.isBlank()) {
+        if (incoming == null) throw new BadRequestException("Corpo da requisição ausente.");
+        if (incoming.email == null || incoming.email.isBlank())
             throw new BadRequestException("Campo 'email' é obrigatório.");
-        }
 
-        // Monta a entidade a ser persistida
+        if (Usuario.find("email", incoming.email).firstResult() != null)
+            throw new WebApplicationException("Email já está em uso.", Response.Status.CONFLICT);
+
         Usuario u = new Usuario();
-        u.id = (incoming.id != null) ? incoming.id : UUID.randomUUID();
+        u.id = incoming.id; // se null, @PrePersist gera
         u.nome = incoming.nome;
         u.email = incoming.email;
-        u.onl = incoming.ativo;                // cuidado: é primitivo (boolean), default = false se não enviado
+        u.online = incoming.online; // default false no @PrePersist
         u.cargo = incoming.cargo;
-        u.cpf = incoming.cpf;
-        u.dataAdmissao = incoming.dataAdmissao;
-        u.criado_em = incoming.criado_em;        // opcional; se quiser confiar no default do banco, pode deixar null
+        u.senhaHash = incoming.senhaHash;
+        u.lojaId = incoming.lojaId;
 
-        try {
-            u.persist();             // Panache persist
-            // garante geração de erro imediato se violar unique/email etc.
-            Usuario.getEntityManager().flush();
+        u.persist();
+        Panache.getEntityManager().flush();
 
-            URI location = uriInfo.getAbsolutePathBuilder().path(u.id.toString()).build();
-            return Response.created(location).entity(u).build();
-        } catch (Exception e) {
-            // Mapeia violação de unicidade do email para 409
-            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
-            if (msg.contains("unique") || msg.contains("duplicate") || msg.contains("usuarios_email")) {
+        URI location = uriInfo.getAbsolutePathBuilder().path(u.id.toString()).build();
+        return Response.created(location).entity(u).build();
+    }
+
+    @PUT @Path("/{id}")
+    @Transactional
+    public Response update(@PathParam("id") UUID id, Usuario incoming) {
+        Usuario u = Usuario.findById(id);
+        if (u == null) throw new NotFoundException();
+
+        if (incoming.email == null || incoming.email.isBlank())
+            throw new BadRequestException("Campo 'email' é obrigatório.");
+
+        if (!incoming.email.equalsIgnoreCase(u.email)) {
+            if (Usuario.find("email", incoming.email).firstResult() != null)
                 throw new WebApplicationException("Email já está em uso.", Response.Status.CONFLICT);
-            }
-            // outros erros (ex.: RLS bloqueando INSERT)
-            throw new WebApplicationException("Falha ao inserir usuário: " + e.getMessage(),
-                    Response.Status.INTERNAL_SERVER_ERROR);
         }
+
+        u.nome = incoming.nome;
+        u.email = incoming.email;
+        if (incoming.online != null) u.online = incoming.online;
+        u.cargo = incoming.cargo;
+        u.senhaHash = incoming.senhaHash;
+        u.lojaId = incoming.lojaId;
+
+        Panache.getEntityManager().flush();
+        return Response.ok(u).build();
+    }
+
+    @DELETE @Path("/{id}")
+    @Transactional
+    public Response delete(@PathParam("id") UUID id) {
+        boolean ok = Usuario.deleteById(id);
+        if (!ok) throw new NotFoundException();
+        return Response.noContent().build();
     }
 }
