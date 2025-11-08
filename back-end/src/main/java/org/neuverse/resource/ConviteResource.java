@@ -15,6 +15,7 @@ import java.util.UUID;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ConviteResource {
+    
 
     @GET
     public List<Convite> listAll() {

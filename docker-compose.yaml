@@ -1,39 +1,60 @@
-version: "3.8"
-
 services:
   quarkus:
     build:
-      context: ./app
+      context: ./back-end
       dockerfile: Dockerfile
-    container_name: blanche-service
+    env_file: .env
+    environment:
+      # ---- DB (mapeados do .env) ----
+      PGHOST: ${DB_HOST}
+      PGPORT: ${DB_PORT}
+      PGDATABASE: ${DB_NAME}
+      PGUSER: ${DB_USER}
+      PGPASSWORD: ${DB_PASS}
+      PGSSLMODE: ${DB_SSLMODE}
+      PG_SCHEMA: ${DB_SCHEMA}
+      # ---- Mail (seu AuthResource/Service usa quarkus-mailer) ----
+      MAIL_USER: ${MAIL_USER}
+      MAIL_PASS: ${MAIL_PASS}
+      MAIL_HOST: ${MAIL_HOST:-smtp.office365.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:-REQUIRED}
+      MAIL_SSL: ${MAIL_SSL:-false}
+      # ---- App / JWT (ajuste se usar) ----
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change}
+      CHUNK_SIZE: ${CHUNK_SIZE:-10000}
+      TRUNCATE_DEST: ${TRUNCATE_DEST:-false}
+      BLOB_MODE: ${BLOB_MODE:-TEXT_BASE64}
     ports:
       - "8080:8080"
-    environment:
-      # --- Configuração HTTP ---
-      QUARKUS_HTTP_HOST: 0.0.0.0
-      QUARKUS_HTTP_PORT: 8080
-
-      # --- Banco de Dados Supabase (Pooler) ---
-      PGHOST: aws-1-sa-east-1.pooler.supabase.com
-      PGPORT: 5432
-      PGDATABASE: postgres
-      PGUSER: postgres.msqgqrcdhszgfytsgmnu
-      PGPASSWORD: 1Ra@123rA
-      PGSSLMODE: require
-      PG_SCHEMA: core
-      
-      # --- Comportamento opcional ---
-      CHUNK_SIZE: 10000
-      TRUNCATE_DEST: "true"
-      BLOB_MODE: TEXT_BASE64
-
-      # --- Supabase REST (opcional) ---
-      SUPABASE_URL: https://msqgqrcdhszgfytsgmnu.supabase.co
-      SUPABASE_API_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcWdxcmNkaHN6Z2Z5dHNnbW51Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY0Mjk4ODUsImV4cCI6MjA3MjAwNTg4NX0.YRRwGPK9l8y4D3uoJvEvyrXzhxRnceo9Q27iIiW9YWY
-
+    networks: [appnet]
+    
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    working_dir: /app/front-end
+    command: ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]
+    ports:
+      - "5173:5173"
+    env_file:
+      - ./.env                  # carrega as variáveis da RAIZ
+    environment:               # UM bloco só, no formato MAPA (chave: valor)
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
+      VITE_API_BASE: "/"       # se usar proxy /api, ajuste para "/api"
+      VITE_HMR_HOST: "localhost"
+      VITE_HMR_PORT: "5173"
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - quarkus
+    restart: unless-stopped
+    networks:
+      - appnet
     volumes:
-      # Cache Maven local (acelera builds)
-      - m2-cache:/root/.m2
+      - ./:/app                # monta o repo inteiro (inclui .env)
+      - /app/front-end/node_modules
+      - /app/front-end/.vite
 
-volumes:
-  m2-cache:
+networks:
+  appnet: {}
