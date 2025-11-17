@@ -108,8 +108,6 @@ class EmpresaResource @Inject constructor(
         return unidadeRepo.listByEmpresaId(empresa.id)
             .map { UnidadeResponseDTO.fromEntity(it) }
     }
-
-
     /**
      * Criar unidade dentro de uma empresa
      *  - ADMIN: qualquer empresa

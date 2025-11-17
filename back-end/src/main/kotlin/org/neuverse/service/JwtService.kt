@@ -24,19 +24,19 @@ class JwtService(
             "HmacSHA256"
         )
 
-        val role = when (usuario.cargo) {
-            1 -> "ADMIN"
-            2 -> "DIRETOR"
-            else -> "FUNCIONARIO"
-        }
+        // cargo é int2 no banco -> Int no entity
+        val cargoNum = usuario.cargo
+        val cargoStr = cargoNum.toString() // "1", "2", "3"
 
         return Jwt
             .issuer("neuverse-api")
             .subject(usuario.id.toString())
             .upn(usuario.email)
-            .groups(setOf(role))                // usado pelo @RolesAllowed
+            // grupos usados pelo @RolesAllowed
+            .groups(setOf(cargoStr))
+            // claims extras que o front usa
+            .claim("role", cargoNum)
             .claim("nome", usuario.nome)
-            .claim("role", role)                // para ler em currentRole()
             .expiresAt(expiry)
             .sign(signingKey)
     }

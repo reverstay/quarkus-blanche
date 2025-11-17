@@ -24,9 +24,28 @@ class UsuarioResource @Inject constructor(
     private val passwordService: PasswordService
 ) {
 
+    /**
+     * Lista usuários.
+     *
+     * - Se `cargo` NÃO vier: lista todos.
+     * - Se `cargo` vier (1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO): filtra por cargo.
+     *
+     * Ex.: GET /usuarios?cargo=2 -> todos diretores
+     */
     @GET
-    fun listAll(): List<UsuarioResponseDTO> =
-        repo.listAll().map { UsuarioResponseDTO.fromEntity(it) }
+    fun listAll(
+        @QueryParam("cargo") cargo: Int?
+    ): List<UsuarioResponseDTO> {
+        val usuarios: List<Usuario> =
+            if (cargo == null) {
+                repo.listAll()
+            } else {
+                // usa Panache para filtrar pelo campo cargo (int2 no banco)
+                repo.list("cargo = ?1", cargo)
+            }
+
+        return usuarios.map { UsuarioResponseDTO.fromEntity(it) }
+    }
 
     @GET
     @Path("/{id}")
@@ -53,7 +72,7 @@ class UsuarioResource @Inject constructor(
             id = UUID.randomUUID(),
             nome = dto.nome,
             email = dto.email,
-            cargo = dto.cargo,            // 👈 agora já é Int direto
+            cargo = dto.cargo,            // int2 -> Int
             online = false,
             senhaHash = hash,
             criadoEm = now,
