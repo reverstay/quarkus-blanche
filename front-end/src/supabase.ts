@@ -1,0 +1,13 @@
+// src/supabase.ts
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY!; // NUNCA use service_role no front
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,         // guarda refresh token
+    autoRefreshToken: true,
+    storageKey: "blanche:sessao", // seu prefixo
+  },
+});
