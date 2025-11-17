@@ -19,19 +19,25 @@ class JwtService(
     fun generateToken(usuario: Usuario): String {
         val expiry = Instant.now().plus(1, ChronoUnit.HOURS)
 
-        // Chave HMAC para HS256
         val signingKey = SecretKeySpec(
             jwtSecret.toByteArray(StandardCharsets.UTF_8),
             "HmacSHA256"
         )
 
+        val role = when (usuario.cargo) {
+            1 -> "ADMIN"
+            2 -> "DIRETOR"
+            else -> "FUNCIONARIO"
+        }
+
         return Jwt
-            .issuer("neuverse-api")                     // bate com mp.jwt.verify.issuer
+            .issuer("neuverse-api")
             .subject(usuario.id.toString())
             .upn(usuario.email)
-            .groups(setOf(usuario.cargo))               // depois pode trocar pra roles reais
+            .groups(setOf(role))                // usado pelo @RolesAllowed
             .claim("nome", usuario.nome)
+            .claim("role", role)                // para ler em currentRole()
             .expiresAt(expiry)
-            .sign(signingKey)                           // assina com HS256 + segredo
+            .sign(signingKey)
     }
 }

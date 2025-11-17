@@ -14,7 +14,7 @@ export default function Navbar({ isAdminOwner }: Props) {
   }
 
   return (
-    <nav className="navbar navbar-dark" style={{ backgroundColor: '#337ab7' }}>
+    <nav className="navbar navbar-dark" style={{ backgroundColor: '#495057' }}>
       <div className="container-fluid">
         <span className="navbar-brand d-flex align-items-center gap-2">
           <img src="/logo.png" height={30} alt="logo" /> Blanche Lavanderias

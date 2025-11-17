@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import BackgroundBubbles from "../components/BackgroundBubbles";
-import { apiPost } from "../api/http";
+import BackgroundBubbles from "../../components/BackgroundBubbles";
+import { apiPost } from "../../api/http";
+import { LoginResponse, buildPerfilFromLogin } from "../../types/auth";
 
 function parseJwt(token: string): Record<string, any> {
   try {
@@ -37,36 +38,30 @@ export default function Login() {
 
     try {
       // 1) Login no backend Quarkus
-      const resp = await apiPost<any>("/auth/login", {
+      const resp = await apiPost<LoginResponse>("/auth/login", {
         email,
         senha: password, // bate com LoginRequestDTO do backend
       });
 
-      const token: string = resp.token;
-      const usuario = resp.usuario;
-
-      if (!token || !usuario) {
+      const token = resp.token;
+      if (!token || !resp.usuario) {
         throw new Error("Resposta inesperada do servidor de login.");
       }
 
       // 2) Guardar token pra chamadas futuras
       localStorage.setItem("blanche:token", token);
 
-      // 3) Montar um perfil mínimo
-            const claims = parseJwt(token);
-            const emailFromToken: string = claims.upn || usuario.email || email;
+      // 3) Montar um perfil “tipado” usando nosso DTO
+      const perfil = buildPerfilFromLogin(resp, email);
+      localStorage.setItem("blanche:perfil", JSON.stringify(perfil));
 
-            const perfil = {
-              email: emailFromToken,
-              role: usuario.cargo ?? null,
-              empresa: null,
-              ativo: true,
-            };
-            localStorage.setItem("blanche:perfil", JSON.stringify(perfil));
+      // (Opcional) Se quiser ainda inspecionar o JWT:
+      const claims = parseJwt(token);
+      console.log("Claims JWT:", claims);
 
-            // 4) Vai pra Home
-            console.log("LOGIN OK, indo para /home", { emailFromToken, perfil });
-            nav("/home", { replace: true });
+      // 4) Vai pra Home
+      console.log("LOGIN OK, indo para /home", { perfil });
+      nav("/home", { replace: true });
     } catch (ex: any) {
       console.error("Erro no login:", ex);
       setErr(ex?.message ?? String(ex));
@@ -77,7 +72,10 @@ export default function Login() {
   }
 
   return (
-    <div className="d-flex vh-100 position-relative" style={{ backgroundColor: "#00224c31" }}>
+    <div
+      className="d-flex vh-100 position-relative"
+      style={{ backgroundColor: "#00224c31" }}
+    >
       <BackgroundBubbles count={90} />
 
       <div className="d-none d-md-flex col-6 align-items-center justify-content-center p-0">
@@ -135,7 +133,10 @@ export default function Login() {
           </form>
         </div>
 
-        <footer className="mt-auto py-3 text-center text-white" style={{ fontSize: 14 }}>
+        <footer
+          className="mt-auto py-3 text-center text-white"
+          style={{ fontSize: 14 }}
+        >
           © {new Date().getFullYear()} Neuverse — Fazendo sua Empresa maior!.
         </footer>
       </div>

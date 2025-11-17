@@ -2,32 +2,25 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 // páginas
 import Login from "./pages/Login";
-import Home from "./pages/Home";
+import Home from "./pages/Home/index";
 import AdminLayout from "./pages/Admin";
 import Owners from "./pages/Admin/Owners";
+import Pedidos from "./pages/Pedidos";
+import Novo from "./pages/Pedidos/Novo";
 
-// Se quiser ainda usar useSession em outras coisas, pode importar,
-// mas NÃO vamos mais usá-lo pra proteger rota.
-// import { useSession } from "./App";
-
-type Perfil = {
-  email?: string | null;
-  role?: string | null;
-  empresa?: string | null;
-  ativo?: boolean | null;
-};
+import type { PerfilDTO } from "./types/auth";
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("blanche:token");
 }
 
-function getPerfil(): Perfil | null {
+function getPerfil(): PerfilDTO | null {
   if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem("blanche:perfil");
     if (!raw) return null;
-    return JSON.parse(raw) as Perfil;
+    return JSON.parse(raw) as PerfilDTO;
   } catch {
     return null;
   }
@@ -47,12 +40,9 @@ function Protected({ children }: { children: React.ReactNode }) {
 /** Só admins entram (com base no perfil salvo do login) */
 function AdminGate({ children }: { children: React.ReactNode }) {
   const perfil = getPerfil();
-  const role = (perfil?.role || "").toString().toUpperCase();
+  const cargo = Number(perfil?.role ?? 0);
 
-  // Ajusta aqui conforme sua convenção:
-  // - "ADMIN"
-  // - "1" (se cargo "1" significa admin)
-  const isAdmin = role === "ADMIN" || role === "1";
+  const isAdmin = cargo === 1; // 1 = ADMIN
 
   if (!isAdmin) {
     return <Navigate to="/home" replace />;
@@ -67,7 +57,10 @@ export default function AppRoutes() {
   return (
     <Routes>
       {/* Raiz: manda para /home ou /login com base no token do Quarkus */}
-      <Route path="/" element={<Navigate to={hasToken ? "/home" : "/login"} replace />} />
+      <Route
+        path="/"
+        element={<Navigate to={hasToken ? "/home" : "/login"} replace />}
+      />
 
       <Route path="/login" element={<Login />} />
 
@@ -81,7 +74,27 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Admin + subrotas protegidas por JWT + role do perfil */}
+      {/* Dashboard de pedidos */}
+      <Route
+        path="/pedidos"
+        element={
+          <Protected>
+            <Pedidos />
+          </Protected>
+        }
+      />
+
+      {/* Tela de novo pedido */}
+      <Route
+        path="/novo"
+        element={
+          <Protected>
+            <Novo />
+          </Protected>
+        }
+      />
+
+      {/* Admin + subrotas protegidas por JWT + cargo=1 */}
       <Route
         path="/admin"
         element={
@@ -94,7 +107,6 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="owners" replace />} />
         <Route path="owners" element={<Owners />} />
-        {/* futuras: /admin/lojas, /admin/funcionarios, etc. */}
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

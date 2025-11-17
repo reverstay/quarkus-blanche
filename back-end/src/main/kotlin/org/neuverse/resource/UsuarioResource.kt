@@ -31,7 +31,7 @@ class UsuarioResource @Inject constructor(
     @GET
     @Path("/{id}")
     fun getOne(@PathParam("id") id: UUID): Response {
-        val usuario = repo.findById(id)
+        val usuario = repo.findByIdUuid(id)
             ?: return Response.status(Response.Status.NOT_FOUND).build()
 
         return Response.ok(UsuarioResponseDTO.fromEntity(usuario)).build()
@@ -53,7 +53,7 @@ class UsuarioResource @Inject constructor(
             id = UUID.randomUUID(),
             nome = dto.nome,
             email = dto.email,
-            cargo = dto.cargo,
+            cargo = dto.cargo,            // 👈 agora já é Int direto
             online = false,
             senhaHash = hash,
             criadoEm = now,

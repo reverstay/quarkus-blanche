@@ -1,40 +1,60 @@
 // src/types/auth.ts
-export type PermissaoDTO = {
-  role: string | null;
-  permissao_ativa: boolean | null;
-  usuario_email?: string | null;
-  empresa_nome?: string | null;
-};
 
-export type UsuarioDTO = {
+// DTO que reflete o que o backend Quarkus devolve em /auth/login
+// (veio do LoginResponseDTO em Kotlin)
+export type UsuarioResponseDTO = {
   id: string;
   nome: string;
   email: string;
-  cargo: string;
+  cargo: number;      // int2 no banco → number no front
   online: boolean;
   emailVerificado: boolean;
   twoFactorEnabled: boolean;
-  criadoEm: string;
+  criadoEm: string;   // OffsetDateTime → string ISO
   atualizadoEm: string;
 };
 
-export type LoginResponseSem2FA = {
+// Resposta do login (sem 2FA por enquanto)
+export type LoginResponse = {
   token: string;
-  usuario: UsuarioDTO;
+  usuario: UsuarioResponseDTO;
 };
 
-// se no futuro você implementar 2FA, mantém a união:
-export type LoginResponse2FA = {
-  requires2FA: true;
-  session: string;
-  email: string;
-};
-
-export type LoginResponse = LoginResponseSem2FA | LoginResponse2FA;
-
-export type PerfilLocalStorage = {
+// Perfil que vamos guardar no localStorage
+export type PerfilFront = {
   email: string | null;
-  role: string | null;
-  empresa: string | null;
-  ativo: boolean | null;
+  role: number | null;    // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
+  empresa: string | null; // depois podemos preencher com empresa/unidade
+  ativo: boolean;
 };
+
+/**
+ * Constrói o perfil que vai pro localStorage
+ * a partir da resposta do /auth/login.
+ */
+export function buildPerfilFromLogin(
+  resp: LoginResponse,
+  fallbackEmail?: string
+): PerfilFront {
+  const { usuario } = resp;
+
+  const email =
+    usuario?.email ??
+    fallbackEmail ??
+    null;
+
+  let role: number | null = null;
+  if (typeof usuario?.cargo === "number") {
+    role = usuario.cargo;
+  } else if (usuario && (usuario as any).cargo != null) {
+    const n = Number((usuario as any).cargo);
+    role = Number.isFinite(n) ? n : null;
+  }
+
+  return {
+    email,
+    role,
+    empresa: null,
+    ativo: true,
+  };
+}
