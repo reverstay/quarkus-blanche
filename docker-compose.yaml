@@ -13,7 +13,7 @@ services:
       PGPASSWORD: ${DB_PASS}
       PGSSLMODE: ${DB_SSLMODE}
       PG_SCHEMA: ${DB_SCHEMA}
-      # ---- Mail (seu AuthResource/Service usa quarkus-mailer) ----
+      # ---- Mail (seu AuthResource.kt/Service usa quarkus-mailer) ----
       MAIL_USER: ${MAIL_USER}
       MAIL_PASS: ${MAIL_PASS}
       MAIL_HOST: ${MAIL_HOST:-smtp.office365.com}
@@ -34,25 +34,26 @@ services:
       context: ./front-end
       dockerfile: Dockerfile
     working_dir: /app/front-end
-    command: ["npm","run","dev","--","--host","0.0.0.0","--port","5173"]
+    command: ["sh","-lc","npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
     ports:
       - "5173:5173"
     env_file:
-      - ./.env                  # carrega as variáveis da RAIZ
-    environment:               # UM bloco só, no formato MAPA (chave: valor)
+      - ./.env
+    environment:
+      # expõe ao Vite (browser)
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-      VITE_API_BASE: "/"       # se usar proxy /api, ajuste para "/api"
+      # monta URL absoluta p/ API: http://localhost:8080/api
+      VITE_API_BASE: "${API_TARGET}"
       VITE_HMR_HOST: "localhost"
       VITE_HMR_PORT: "5173"
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
       - quarkus
     restart: unless-stopped
-    networks:
-      - appnet
+    networks: [appnet]
     volumes:
-      - ./:/app                # monta o repo inteiro (inclui .env)
+      - ./:/app
       - /app/front-end/node_modules
       - /app/front-end/.vite
 
