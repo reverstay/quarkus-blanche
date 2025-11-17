@@ -1,42 +1,77 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useSession } from "./App";
 
 // páginas
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import AdminLayout from "./pages/Admin";
 import Owners from "./pages/Admin/Owners";
-import { useIsAdmin } from "./hooks/useIsAdmin";
 
-/** Exige usuário logado */
+// Se quiser ainda usar useSession em outras coisas, pode importar,
+// mas NÃO vamos mais usá-lo pra proteger rota.
+// import { useSession } from "./App";
+
+type Perfil = {
+  email?: string | null;
+  role?: string | null;
+  empresa?: string | null;
+  ativo?: boolean | null;
+};
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("blanche:token");
+}
+
+function getPerfil(): Perfil | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("blanche:perfil");
+    if (!raw) return null;
+    return JSON.parse(raw) as Perfil;
+  } catch {
+    return null;
+  }
+}
+
+/** Exige usuário logado (via JWT do Quarkus) */
 function Protected({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useSession();
-  if (loading) return <div style={{ padding: 24 }}>Carregando…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  const token = getToken();
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }
 
-/** Só admins entram */
+/** Só admins entram (com base no perfil salvo do login) */
 function AdminGate({ children }: { children: React.ReactNode }) {
-  const { user } = useSession();
-  const email = user?.email ?? null;
-  const { isAdmin, loading } = useIsAdmin(email);
+  const perfil = getPerfil();
+  const role = (perfil?.role || "").toString().toUpperCase();
 
-  if (loading) return <div style={{ padding: 24 }}>Verificando permissões…</div>;
-  if (!isAdmin) return <Navigate to="/home" replace />;
+  // Ajusta aqui conforme sua convenção:
+  // - "ADMIN"
+  // - "1" (se cargo "1" significa admin)
+  const isAdmin = role === "ADMIN" || role === "1";
+
+  if (!isAdmin) {
+    return <Navigate to="/home" replace />;
+  }
+
   return <>{children}</>;
 }
 
 export default function AppRoutes() {
-  const { user } = useSession();
+  const hasToken = !!getToken();
 
   return (
     <Routes>
-      {/* Raiz: manda para /home ou /login */}
-      <Route path="/" element={<Navigate to={user ? "/home" : "/login"} replace />} />
+      {/* Raiz: manda para /home ou /login com base no token do Quarkus */}
+      <Route path="/" element={<Navigate to={hasToken ? "/home" : "/login"} replace />} />
+
       <Route path="/login" element={<Login />} />
 
-      {/* Home protegida */}
+      {/* Home protegida pelo JWT */}
       <Route
         path="/home"
         element={
@@ -46,7 +81,7 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Admin + subrotas */}
+      {/* Admin + subrotas protegidas por JWT + role do perfil */}
       <Route
         path="/admin"
         element={
