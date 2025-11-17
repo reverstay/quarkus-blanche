@@ -7,6 +7,10 @@ import AdminLayout from "./pages/Admin";
 import Owners from "./pages/Admin/Owners";
 import Pedidos from "./pages/Pedidos";
 import Novo from "./pages/Pedidos/Novo";
+import NovaUnidade from "./pages/Unidades/Novo";
+import NovoFuncionario from "./pages/Funcionarios/Novo";
+import NovaEmpresa from "./pages/Empresas/Novo";
+
 
 import type { PerfilDTO } from "./types/auth";
 
@@ -73,7 +77,14 @@ export default function AppRoutes() {
           </Protected>
         }
       />
-
+      <Route
+        path="/empresas/nova"
+        element={
+          <Protected>
+            <NovaEmpresa />
+          </Protected>
+        }
+      />
       {/* Dashboard de pedidos */}
       <Route
         path="/pedidos"
@@ -93,6 +104,26 @@ export default function AppRoutes() {
           </Protected>
         }
       />
+            {/* Nova Unidade */}
+            <Route
+              path="/unidades/nova"
+              element={
+                <Protected>
+                  <NovaUnidade />
+                </Protected>
+              }
+            />
+
+            {/* Novo Funcionário */}
+            <Route
+              path="/funcionarios/novo"
+              element={
+                <Protected>
+                  <NovoFuncionario />
+                </Protected>
+              }
+            />
+
 
       {/* Admin + subrotas protegidas por JWT + cargo=1 */}
       <Route

@@ -16,8 +16,13 @@ const safeArray = <T,>(v: T[] | null | undefined): T[] =>
   Array.isArray(v) ? v : [];
 const nil = <T,>(v: T | null | undefined, fb: T): T => (v == null ? fb : v);
 
+// Config da agenda
 type AppSettings = { id: number; days_back: number; days_ahead: number };
+
+// Cores por loja (Supabase)
 type LojaColor = { loja: number; color: string };
+
+// Movimentos / pedidos
 type MovCab = {
   id: number;
   loja_id: number | null;
@@ -29,6 +34,8 @@ type MovCab = {
 
 // DTO estendido só pra Home (empresa + unidades)
 type EmpresaWithUnidades = EmpresaDTO & { unidades: UnidadeDTO[] };
+
+// ====== helpers de sessão local (JWT do Quarkus) ======
 
 function getPerfil(): PerfilDTO | null {
   if (typeof window === "undefined") return null;
@@ -46,14 +53,16 @@ function getToken(): string | null {
   return localStorage.getItem("blanche:token");
 }
 
+// ====== componente ======
+
 export default function Home() {
   const nav = useNavigate();
-  const perfil = getPerfil();
-  const cargo = Number(perfil?.role ?? 0);
 
-  const isAdmin = cargo === 1;
-  const isDiretor = cargo === 2;
-  const isFuncionario = cargo === 3;
+  const perfil = getPerfil();
+  const cargoNum = perfil?.role != null ? Number(perfil.role) : 0;
+  const isAdmin = cargoNum === 1;
+  const isDiretor = cargoNum === 2;
+  const isFuncionario = cargoNum === 3; // por enquanto não usamos, mas é bom já deixar
 
   // ====== estado para Supabase (pedidos) ======
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -82,8 +91,10 @@ export default function Home() {
             .select("id,days_back,days_ahead")
             .eq("id", 1)
             .maybeSingle();
+
           if (error && error.code !== "PGRST116") throw error;
           if (!mounted) return;
+
           setSettings(
             (data as AppSettings) ?? { id: 1, days_back: 7, days_ahead: 7 }
           );
@@ -95,8 +106,10 @@ export default function Home() {
             .from("LojaConfig")
             .select("loja,color")
             .order("loja", { ascending: true });
+
           if (error) throw error;
           if (!mounted) return;
+
           setLojaColors(safeArray(data as LojaColor[]));
         }
 
@@ -106,6 +119,7 @@ export default function Home() {
             .from("vw_movcab_priority")
             .select("*")
             .order("priority_number", { ascending: true })
+            // se a view não tiver "data", trocar pelo nome real da coluna
             .order("data", { ascending: true })
             .limit(50);
 
@@ -115,8 +129,10 @@ export default function Home() {
               .select("*")
               .order("data", { ascending: false })
               .limit(50);
+
             if (e2) throw error;
             if (!mounted) return;
+
             setItems(safeArray(mv2 as MovCab[]));
           } else {
             if (!mounted) return;
@@ -124,9 +140,7 @@ export default function Home() {
           }
         }
 
-        if (mounted) {
-          setErrPedidos(null);
-        }
+        if (mounted) setErrPedidos(null);
       } catch (e: any) {
         console.error("Home load error (pedidos):", e);
         if (mounted) setErrPedidos(e?.message ?? String(e));
@@ -144,6 +158,7 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
     const token = getToken();
+
     if (!token) {
       setErrEmpresas("Sessão expirada. Faça login novamente.");
       setLoadingEmpresas(false);
@@ -154,12 +169,12 @@ export default function Home() {
       try {
         setLoadingEmpresas(true);
 
-        // 1) Buscar empresas onde o usuário é admin/diretor
+        // 1) empresas onde o usuário é admin/diretor
         const empresasResp = await apiGet<EmpresaDTO[]>("/empresas/minhas", token);
 
         const empresasComUnidades: EmpresaWithUnidades[] = [];
 
-        // 2) Para cada empresa, buscar unidades
+        // 2) para cada empresa, buscar unidades
         for (const emp of empresasResp) {
           try {
             const unidades = await apiGet<UnidadeDTO[]>(
@@ -193,6 +208,7 @@ export default function Home() {
 
   // ====== KPIs de pedidos ======
   const totalPedidos = items.length;
+
   const pedidosProntos = useMemo(
     () =>
       items.filter(
@@ -200,6 +216,7 @@ export default function Home() {
       ).length,
     [items]
   );
+
   const pedidosPendentes = totalPedidos - pedidosProntos;
 
   const lojasConfig = lojaColors.length;
@@ -225,12 +242,12 @@ export default function Home() {
       {/* Navbar de sistema */}
       <Navbar isAdminOwner={isAdmin || isDiretor} />
 
-      {/* Conteúdo */}
+      {/* Conteúdo principal */}
       <main
         className="container py-3 position-relative"
         style={{ zIndex: 1 }}
       >
-        {/* Cabeçalho da Home de Admin/Diretor/Funcionário */}
+        {/* Cabeçalho */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
           <div>
             <h2 className="mb-1 text-white">
@@ -253,7 +270,6 @@ export default function Home() {
           </div>
 
           <div className="d-flex gap-2 mt-3 mt-md-0">
-            {/* Todos podem ver dashboard de pedidos */}
             <button
               className="btn btn-warning fw-bold"
               onClick={() => nav("/pedidos")}
@@ -262,7 +278,6 @@ export default function Home() {
               Dashboard de Pedidos
             </button>
 
-            {/* Admin + Diretores podem criar pedidos direto */}
             {(isAdmin || isDiretor) && (
               <button
                 className="btn btn-outline-light"
@@ -275,7 +290,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Linha de cards de resumo (Pedidos + Empresas/Unidades) */}
+        {/* Cards de resumo */}
         <div className="row g-3 mb-4">
           {/* Pedidos listados */}
           <div className="col-md-3">
@@ -317,7 +332,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Empresas gerenciadas */}
+          {/* Empresas */}
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
@@ -360,7 +375,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bloco de EMPRESAS & UNIDADES (gerenciamento por cargo) */}
+        {/* Empresas e Unidades */}
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -379,26 +394,30 @@ export default function Home() {
 
               <div className="d-flex gap-2">
                 {isAdmin && (
-                  <button
-                    className="btn btn-sm btn-outline-primary"
-                    onClick={() => {
-                      // futuro: abrir modal / página para criar empresa
-                      alert("TODO: Tela de criação de empresa");
-                    }}
-                  >
-                    <i className="bi bi-building-add me-1" />
-                    Nova empresa
-                  </button>
+                  <>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => nav("/empresas/nova")}
+                    >
+                      <i className="bi bi-building-add me-1" />
+                      Nova empresa
+                    </button>
+
+                    <button
+                      className="btn btn-sm btn-outline-warning"
+                      onClick={() => nav("/admin")}
+                    >
+                      <i className="bi bi-people-fill me-1" />
+                      Gerenciar diretores
+                    </button>
+                  </>
                 )}
 
                 {isDiretor && (
                   <>
                     <button
                       className="btn btn-sm btn-outline-success"
-                      onClick={() => {
-                        // futuro: abrir seleção de empresa + criação de unidade
-                        alert("TODO: Tela de criação de unidade para empresa");
-                      }}
+                      onClick={() => nav("/unidades/nova")}
                     >
                       <i className="bi bi-shop-window me-1" />
                       Nova unidade
@@ -406,25 +425,12 @@ export default function Home() {
 
                     <button
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => {
-                        // futuro: tela para adicionar funcionários
-                        alert("TODO: Tela de adicionar funcionários à empresa/unidade");
-                      }}
+                      onClick={() => nav("/funcionarios/novo")}
                     >
                       <i className="bi bi-person-plus me-1" />
-                      Adicionar funcionário
+                      Novo funcionário
                     </button>
                   </>
-                )}
-
-                {isAdmin && (
-                  <button
-                    className="btn btn-sm btn-outline-warning"
-                    onClick={() => nav("/admin")}
-                  >
-                    <i className="bi bi-people-fill me-1" />
-                    Gerenciar diretores
-                  </button>
                 )}
               </div>
             </div>
@@ -452,9 +458,7 @@ export default function Home() {
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <div>
                                 <h5 className="mb-1">{emp.nome}</h5>
-                                <small className="text-muted">
-                                  ID: {emp.id}
-                                </small>
+                                <small className="text-muted">ID: {emp.id}</small>
                               </div>
                               <span className="badge bg-primary">
                                 {emp.unidades.length} unidade
@@ -495,7 +499,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Bloco de ÚLTIMOS PEDIDOS (como você já tinha) */}
+        {/* Últimos pedidos */}
         <div className="card border-0 shadow-sm">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-2">

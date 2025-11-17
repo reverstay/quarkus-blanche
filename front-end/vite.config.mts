@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => {
   // HMR / porta
   const hmrHost = env.VITE_HMR_HOST || "localhost";
   const hmrPort = Number(env.VITE_HMR_PORT || "5173");
-  const usePolling = (env.CHOKIDAR_USEPOLLING || "").toLowerCase() === "true";
+  const usePolling =
+    (env.CHOKIDAR_USEPOLLING || "").toLowerCase() === "true";
 
   // Base da API:
   // - Se VITE_API_BASE for uma URL absoluta (http...), o front chama direto essa URL
@@ -17,37 +18,46 @@ export default defineConfig(({ mode }) => {
   const apiBase = env.VITE_API_BASE || "";
   const apiIsAbsolute = /^https?:\/\//i.test(apiBase);
 
-  // Detecta se está rodando em Docker
-  // (você já setou DOCKER=1 no .env da raiz)
+  // Detecta se está rodando em Docker (DOCKER=1 no .env)
   const isDocker = (process.env.DOCKER || env.DOCKER) === "1";
 
-  // Para proxy:
-  // - Em Docker: backend acessível pelo nome do serviço (quarkus:8080)
-  // - Fora de Docker: localhost:8080
+  // Destino do backend:
+  // - Em Docker: nome do serviço (quarkus:8080)
+  // - Fora do Docker: localhost:8080 (ou override via API_TARGET)
   const targetHost = isDocker
     ? "http://quarkus:8080"
-    : (env.API_TARGET || "http://localhost:8080");
+    : env.API_TARGET || "http://localhost:8080";
 
   const proxy: Record<string, any> = {};
 
-  // Só configura proxy se NÃO tiver uma base absoluta de API
   if (!apiIsAbsolute) {
-    // Suas rotas de backend
+    // Auth
     proxy["/auth"] = { target: targetHost, changeOrigin: true };
+
+    // (se ainda usar esse endpoint legado)
     proxy["/permissoes"] = { target: targetHost, changeOrigin: true };
-    // útil pra checar health / q/health etc.
+
+    // Empresas / Unidades / Usuários (novo backend Quarkus)
+    proxy["/empresas"] = { target: targetHost, changeOrigin: true };
+    proxy["/usuarios"] = { target: targetHost, changeOrigin: true };
+    proxy["/unidades"] = { target: targetHost, changeOrigin: true };
+
+    // Health / q/...
     proxy["/q"] = { target: targetHost, changeOrigin: true };
   }
 
   return {
     plugins: [react()],
     server: {
-      host: true,        // aceita conexões externas (importante no Docker)
+      host: true,
       port: hmrPort,
       strictPort: true,
-      hmr: { host: hmrHost, port: hmrPort },
+      hmr: {
+        host: hmrHost,
+        port: hmrPort,
+      },
       watch: { usePolling },
-      proxy,             // ativo se VITE_API_BASE não for absoluto
+      proxy,
     },
     preview: {
       port: hmrPort,

@@ -58,3 +58,43 @@ export function buildPerfilFromLogin(
     ativo: true,
   };
 }
+
+export type PerfilDTO = {
+  email?: string | null;
+  role?: number | string | null;   // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
+  empresa?: string | null;
+  ativo?: boolean | null;
+};
+
+/**
+ * Lê o perfil salvo no login.
+ */
+export function getStoredPerfil(): PerfilDTO | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("blanche:perfil");
+    if (!raw) return null;
+    return JSON.parse(raw) as PerfilDTO;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Lê o token JWT salvo no login.
+ */
+export function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("blanche:token");
+}
+
+/**
+ * Converte o cargo numérico em label.
+ */
+export function cargoToLabel(cargo: number | null | undefined): "ADMIN" | "DIRETOR" | "FUNCIONARIO" | "DESCONHECIDO" {
+  const c = Number(cargo);
+  if (c === 1) return "ADMIN";
+  if (c === 2) return "DIRETOR";
+  if (c === 3) return "FUNCIONARIO";
+  return "DESCONHECIDO";
+}
