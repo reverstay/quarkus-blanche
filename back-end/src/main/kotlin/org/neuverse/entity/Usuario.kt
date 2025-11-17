@@ -22,8 +22,9 @@ class Usuario(
     @Column(name = "online", nullable = false)
     var online: Boolean = false,
 
+    // 👇 agora mapeado como INT (Postgres int2 → Int em Kotlin)
     @Column(name = "cargo", nullable = false)
-    var cargo: String = "",
+    var cargo: Int = 3,    // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
 
     @Column(name = "criado_em", nullable = false)
     var criadoEm: OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC),

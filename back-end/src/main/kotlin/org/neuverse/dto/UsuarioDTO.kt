@@ -7,7 +7,7 @@ import java.util.UUID
 data class UsuarioCreateDTO(
     val nome: String = "",
     val email: String = "",
-    val cargo: String = "",
+    val cargo: Int = 3,  // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
     val senha: String = ""
 )
 
@@ -15,7 +15,7 @@ data class UsuarioResponseDTO(
     val id: UUID,
     val nome: String,
     val email: String,
-    val cargo: String,
+    val cargo: Int,
     val online: Boolean,
     val emailVerificado: Boolean,
     val twoFactorEnabled: Boolean,

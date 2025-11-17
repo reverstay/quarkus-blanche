@@ -1,42 +1,74 @@
 import { Navigate, Route, Routes } from "react-router-dom";
-import { useSession } from "./App";
 
 // páginas
 import Login from "./pages/Login";
-import Home from "./pages/Home";
+import Home from "./pages/Home/index";
 import AdminLayout from "./pages/Admin";
 import Owners from "./pages/Admin/Owners";
-import { useIsAdmin } from "./hooks/useIsAdmin";
+import Pedidos from "./pages/Pedidos";
+import Novo from "./pages/Pedidos/Novo";
+import NovaUnidade from "./pages/Unidades/Novo";
+import NovoFuncionario from "./pages/Funcionarios/Novo";
+import NovaEmpresa from "./pages/Empresas/Novo";
 
-/** Exige usuário logado */
+
+import type { PerfilDTO } from "./types/auth";
+
+function getToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem("blanche:token");
+}
+
+function getPerfil(): PerfilDTO | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("blanche:perfil");
+    if (!raw) return null;
+    return JSON.parse(raw) as PerfilDTO;
+  } catch {
+    return null;
+  }
+}
+
+/** Exige usuário logado (via JWT do Quarkus) */
 function Protected({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useSession();
-  if (loading) return <div style={{ padding: 24 }}>Carregando…</div>;
-  if (!user) return <Navigate to="/login" replace />;
+  const token = getToken();
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }
 
-/** Só admins entram */
+/** Só admins entram (com base no perfil salvo do login) */
 function AdminGate({ children }: { children: React.ReactNode }) {
-  const { user } = useSession();
-  const email = user?.email ?? null;
-  const { isAdmin, loading } = useIsAdmin(email);
+  const perfil = getPerfil();
+  const cargo = Number(perfil?.role ?? 0);
 
-  if (loading) return <div style={{ padding: 24 }}>Verificando permissões…</div>;
-  if (!isAdmin) return <Navigate to="/home" replace />;
+  const isAdmin = cargo === 1; // 1 = ADMIN
+
+  if (!isAdmin) {
+    return <Navigate to="/home" replace />;
+  }
+
   return <>{children}</>;
 }
 
 export default function AppRoutes() {
-  const { user } = useSession();
+  const hasToken = !!getToken();
 
   return (
     <Routes>
-      {/* Raiz: manda para /home ou /login */}
-      <Route path="/" element={<Navigate to={user ? "/home" : "/login"} replace />} />
+      {/* Raiz: manda para /home ou /login com base no token do Quarkus */}
+      <Route
+        path="/"
+        element={<Navigate to={hasToken ? "/home" : "/login"} replace />}
+      />
+
       <Route path="/login" element={<Login />} />
 
-      {/* Home protegida */}
+      {/* Home protegida pelo JWT */}
       <Route
         path="/home"
         element={
@@ -45,8 +77,55 @@ export default function AppRoutes() {
           </Protected>
         }
       />
+      <Route
+        path="/empresas/nova"
+        element={
+          <Protected>
+            <NovaEmpresa />
+          </Protected>
+        }
+      />
+      {/* Dashboard de pedidos */}
+      <Route
+        path="/pedidos"
+        element={
+          <Protected>
+            <Pedidos />
+          </Protected>
+        }
+      />
 
-      {/* Admin + subrotas */}
+      {/* Tela de novo pedido */}
+      <Route
+        path="/novo"
+        element={
+          <Protected>
+            <Novo />
+          </Protected>
+        }
+      />
+            {/* Nova Unidade */}
+            <Route
+              path="/unidades/nova"
+              element={
+                <Protected>
+                  <NovaUnidade />
+                </Protected>
+              }
+            />
+
+            {/* Novo Funcionário */}
+            <Route
+              path="/funcionarios/novo"
+              element={
+                <Protected>
+                  <NovoFuncionario />
+                </Protected>
+              }
+            />
+
+
+      {/* Admin + subrotas protegidas por JWT + cargo=1 */}
       <Route
         path="/admin"
         element={
@@ -59,7 +138,6 @@ export default function AppRoutes() {
       >
         <Route index element={<Navigate to="owners" replace />} />
         <Route path="owners" element={<Owners />} />
-        {/* futuras: /admin/lojas, /admin/funcionarios, etc. */}
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
