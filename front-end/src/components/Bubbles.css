@@ -1,0 +1,67 @@
+/* ===== Blanche Bubbles v4 (random per-bubble) ===== */
+
+.bg-bubbles {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  z-index: -1;           /* fica atrás do conteúdo, mas visível */
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 600px at 80% -10%, rgba(214, 51, 51, 0.15), transparent 60%),
+    radial-gradient(1000px 600px at 0% 110%, rgba(11,27,201,0.42), transparent 60%),
+    linear-gradient(180deg, #073087 0%, #0f448a 100%);
+}
+
+/* wrapper: sobe; propriedades vêm do style inline */
+.bubble {
+  position: absolute;
+  bottom: -140px;
+  left: var(--left, 50%);
+  transform: translateX(-50%);
+  width: var(--size, 28px);
+  height: var(--size, 28px);
+  filter: blur(var(--blur, 0px));
+  opacity: 0.85;
+  will-change: transform, opacity;
+  animation: rise var(--dur, 6.5s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+/* inner: visual + drift + parallax */
+.bubble .i {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  will-change: transform, opacity;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255,255,255,0.92), rgba(255,255,255,0.35));
+  box-shadow:
+    0 0 18px rgba(250,204,21,0.15),
+    inset 0 0 10px rgba(255,255,255,0.25);
+
+  transform: translate3d(
+    calc(var(--mx, 0) * var(--px, 14px)),
+    calc(var(--my, 0) * var(--py, 10px)),
+    0
+  );
+  animation: drift var(--drift, 3s) ease-in-out infinite alternate;
+}
+
+/* keyframes */
+@keyframes rise {
+  0%   { transform: translate(-50%, 0)        scale(0.9);  opacity: 0.0; }
+  10%  { opacity: 0.55; }
+  50%  { transform: translate(-50%, -50vh)    scale(1.05); opacity: 0.85; }
+  100% { transform: translate(-50%, -105vh)   scale(0.85); opacity: 0.0; }
+}
+
+@keyframes drift {
+  0%   { transform: translate3d(calc(var(--mx) * var(--px) - 6px), calc(var(--my) * var(--py)), 0); }
+  100% { transform: translate3d(calc(var(--mx) * var(--px) + 6px), calc(var(--my) * var(--py)), 0); }
+}
+
+/* acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .bubble, .bubble .i { animation: none !important; transform: none !important; opacity: 0.25; }
+}
