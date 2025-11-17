@@ -1,5 +1,6 @@
 package org.neuverse.resource
 
+import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -31,6 +32,8 @@ class UsuarioResource @Inject constructor(
      * - Se `cargo` vier (1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO): filtra por cargo.
      *
      * Ex.: GET /usuarios?cargo=2 -> todos diretores
+     *
+     * Apenas ADMIN pode listar usuários.
      */
     @GET
     fun listAll(
@@ -40,11 +43,23 @@ class UsuarioResource @Inject constructor(
             if (cargo == null) {
                 repo.listAll()
             } else {
-                // usa Panache para filtrar pelo campo cargo (int2 no banco)
                 repo.list("cargo = ?1", cargo)
             }
 
         return usuarios.map { UsuarioResponseDTO.fromEntity(it) }
+    }
+
+    /**
+     * Atalho específico para listar apenas diretores.
+     * Ex.: GET /usuarios/diretores
+     *
+     * Também apenas ADMIN.
+     */
+    @GET
+    @Path("/diretores")
+    fun listDiretores(): List<UsuarioResponseDTO> {
+        val diretores: List<Usuario> = repo.list("cargo = ?1", 2)
+        return diretores.map { UsuarioResponseDTO.fromEntity(it) }
     }
 
     @GET

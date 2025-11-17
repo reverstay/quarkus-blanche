@@ -82,9 +82,8 @@ export default function NovaEmpresa() {
         setLoadingDiretores(true);
         setErrDiretores(null);
 
-        // backend: GET /usuarios?cargo=2  (2 = DIRETOR)
-        const data = await apiGet<DiretorDTO[]>("/usuarios?cargo=2", token);
 
+        const diretores = await apiGet<UsuarioDTO[]>("/usuarios?cargo=2", token);
         if (!mounted) return;
         setDiretores(data ?? []);
       } catch (e: any) {

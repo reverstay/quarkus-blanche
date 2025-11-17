@@ -16,13 +16,8 @@ const safeArray = <T,>(v: T[] | null | undefined): T[] =>
   Array.isArray(v) ? v : [];
 const nil = <T,>(v: T | null | undefined, fb: T): T => (v == null ? fb : v);
 
-// Config da agenda
 type AppSettings = { id: number; days_back: number; days_ahead: number };
-
-// Cores por loja (Supabase)
 type LojaColor = { loja: number; color: string };
-
-// Movimentos / pedidos
 type MovCab = {
   id: number;
   loja_id: number | null;
@@ -34,8 +29,6 @@ type MovCab = {
 
 // DTO estendido só pra Home (empresa + unidades)
 type EmpresaWithUnidades = EmpresaDTO & { unidades: UnidadeDTO[] };
-
-// ====== helpers de sessão local (JWT do Quarkus) ======
 
 function getPerfil(): PerfilDTO | null {
   if (typeof window === "undefined") return null;
@@ -53,16 +46,14 @@ function getToken(): string | null {
   return localStorage.getItem("blanche:token");
 }
 
-// ====== componente ======
-
 export default function Home() {
   const nav = useNavigate();
-
   const perfil = getPerfil();
-  const cargoNum = perfil?.role != null ? Number(perfil.role) : 0;
-  const isAdmin = cargoNum === 1;
-  const isDiretor = cargoNum === 2;
-  const isFuncionario = cargoNum === 3; // por enquanto não usamos, mas é bom já deixar
+  const cargo = Number(perfil?.role ?? 0);
+
+  const isAdmin = cargo === 1;
+  const isDiretor = cargo === 2;
+  const isFuncionario = cargo === 3;
 
   // ====== estado para Supabase (pedidos) ======
   const [settings, setSettings] = useState<AppSettings | null>(null);
@@ -91,10 +82,8 @@ export default function Home() {
             .select("id,days_back,days_ahead")
             .eq("id", 1)
             .maybeSingle();
-
           if (error && error.code !== "PGRST116") throw error;
           if (!mounted) return;
-
           setSettings(
             (data as AppSettings) ?? { id: 1, days_back: 7, days_ahead: 7 }
           );
@@ -106,10 +95,8 @@ export default function Home() {
             .from("LojaConfig")
             .select("loja,color")
             .order("loja", { ascending: true });
-
           if (error) throw error;
           if (!mounted) return;
-
           setLojaColors(safeArray(data as LojaColor[]));
         }
 
@@ -118,21 +105,18 @@ export default function Home() {
           const { data, error } = await supabase
             .from("vw_movcab_priority")
             .select("*")
+            // ❌ removido .order("data"...), a coluna não existe mais
             .order("priority_number", { ascending: true })
-            // se a view não tiver "data", trocar pelo nome real da coluna
-            .order("data", { ascending: true })
             .limit(50);
 
           if (error) {
             const { data: mv2, error: e2 } = await supabase
               .from("MovCab")
               .select("*")
-              .order("data", { ascending: false })
+              // idem aqui: sem order por "data"
               .limit(50);
-
             if (e2) throw error;
             if (!mounted) return;
-
             setItems(safeArray(mv2 as MovCab[]));
           } else {
             if (!mounted) return;
@@ -140,7 +124,9 @@ export default function Home() {
           }
         }
 
-        if (mounted) setErrPedidos(null);
+        if (mounted) {
+          setErrPedidos(null);
+        }
       } catch (e: any) {
         console.error("Home load error (pedidos):", e);
         if (mounted) setErrPedidos(e?.message ?? String(e));
@@ -158,7 +144,6 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
     const token = getToken();
-
     if (!token) {
       setErrEmpresas("Sessão expirada. Faça login novamente.");
       setLoadingEmpresas(false);
@@ -169,12 +154,15 @@ export default function Home() {
       try {
         setLoadingEmpresas(true);
 
-        // 1) empresas onde o usuário é admin/diretor
-        const empresasResp = await apiGet<EmpresaDTO[]>("/empresas/minhas", token);
+        // 1) Buscar empresas onde o usuário é admin/diretor
+        const empresasResp = await apiGet<EmpresaDTO[]>(
+          "/empresas/minhas",
+          token
+        );
 
         const empresasComUnidades: EmpresaWithUnidades[] = [];
 
-        // 2) para cada empresa, buscar unidades
+        // 2) Para cada empresa, buscar unidades
         for (const emp of empresasResp) {
           try {
             const unidades = await apiGet<UnidadeDTO[]>(
@@ -208,15 +196,13 @@ export default function Home() {
 
   // ====== KPIs de pedidos ======
   const totalPedidos = items.length;
-
   const pedidosProntos = useMemo(
     () =>
-      items.filter(
-        (m) => (m.status ?? "").toLowerCase().includes("pronta")
+      items.filter((m) =>
+        (m.status ?? "").toLowerCase().includes("pronta")
       ).length,
     [items]
   );
-
   const pedidosPendentes = totalPedidos - pedidosProntos;
 
   const lojasConfig = lojaColors.length;
@@ -242,12 +228,12 @@ export default function Home() {
       {/* Navbar de sistema */}
       <Navbar isAdminOwner={isAdmin || isDiretor} />
 
-      {/* Conteúdo principal */}
+      {/* Conteúdo */}
       <main
         className="container py-3 position-relative"
         style={{ zIndex: 1 }}
       >
-        {/* Cabeçalho */}
+        {/* Cabeçalho da Home */}
         <div className="d-flex flex-wrap justify-content-between align-items-center mb-3">
           <div>
             <h2 className="mb-1 text-white">
@@ -292,7 +278,6 @@ export default function Home() {
 
         {/* Cards de resumo */}
         <div className="row g-3 mb-4">
-          {/* Pedidos listados */}
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
@@ -312,7 +297,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Pedidos pendentes */}
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
@@ -326,13 +310,12 @@ export default function Home() {
                   <i className="bi bi-hourglass-split fs-2 text-danger" />
                 </div>
                 <small className="text-muted">
-                  Ainda em processamento (não marcados como &quot;pronta&quot;).
+                  Ainda em processamento (não marcados como "pronta").
                 </small>
               </div>
             </div>
           </div>
 
-          {/* Empresas */}
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
@@ -354,7 +337,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Unidades físicas */}
           <div className="col-md-3">
             <div className="card border-0 shadow-sm h-100">
               <div className="card-body">
@@ -375,13 +357,15 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Empresas e Unidades */}
+        {/* Bloco EMPRESAS & UNIDADES */}
         <div className="card border-0 shadow-sm mb-4">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <div>
                 <h5 className="mb-0">
-                  {isAdmin ? "Empresas e Unidades" : "Minhas Empresas e Unidades"}
+                  {isAdmin
+                    ? "Empresas e Unidades"
+                    : "Minhas Empresas e Unidades"}
                 </h5>
                 <small className="text-muted">
                   {isAdmin
@@ -394,30 +378,22 @@ export default function Home() {
 
               <div className="d-flex gap-2">
                 {isAdmin && (
-                  <>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => nav("/empresas/nova")}
-                    >
-                      <i className="bi bi-building-add me-1" />
-                      Nova empresa
-                    </button>
-
-                    <button
-                      className="btn btn-sm btn-outline-warning"
-                      onClick={() => nav("/admin")}
-                    >
-                      <i className="bi bi-people-fill me-1" />
-                      Gerenciar diretores
-                    </button>
-                  </>
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => nav("/empresas/nova")}
+                  >
+                    <i className="bi bi-building-add me-1" />
+                    Nova empresa
+                  </button>
                 )}
 
                 {isDiretor && (
                   <>
                     <button
                       className="btn btn-sm btn-outline-success"
-                      onClick={() => nav("/unidades/nova")}
+                      onClick={() =>
+                        alert("TODO: Tela de criação de unidade para empresa")
+                      }
                     >
                       <i className="bi bi-shop-window me-1" />
                       Nova unidade
@@ -425,12 +401,26 @@ export default function Home() {
 
                     <button
                       className="btn btn-sm btn-outline-secondary"
-                      onClick={() => nav("/funcionarios/novo")}
+                      onClick={() =>
+                        alert(
+                          "TODO: Tela de adicionar funcionários à empresa/unidade"
+                        )
+                      }
                     >
                       <i className="bi bi-person-plus me-1" />
-                      Novo funcionário
+                      Adicionar funcionário
                     </button>
                   </>
+                )}
+
+                {isAdmin && (
+                  <button
+                    className="btn btn-sm btn-outline-warning"
+                    onClick={() => nav("/admin")}
+                  >
+                    <i className="bi bi-people-fill me-1" />
+                    Gerenciar diretores
+                  </button>
                 )}
               </div>
             </div>
@@ -458,7 +448,9 @@ export default function Home() {
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <div>
                                 <h5 className="mb-1">{emp.nome}</h5>
-                                <small className="text-muted">ID: {emp.id}</small>
+                                <small className="text-muted">
+                                  ID: {emp.id}
+                                </small>
                               </div>
                               <span className="badge bg-primary">
                                 {emp.unidades.length} unidade
@@ -499,7 +491,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Últimos pedidos */}
+        {/* Bloco ÚLTIMOS PEDIDOS */}
         <div className="card border-0 shadow-sm">
           <div className="card-body">
             <div className="d-flex justify-content-between align-items-center mb-2">
