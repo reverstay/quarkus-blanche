@@ -97,4 +97,3 @@ networks:
 
 volumes:
   certbot-etc:
-  certbot-var:s
