@@ -1,7 +1,5 @@
-version: "3.9"
-
 services:
-  quarkus:
+  back-end:
     build:
       context: ./back-end
       dockerfile: Dockerfile
@@ -31,7 +29,7 @@ services:
       - "8080:8080"
     networks: [appnet]
 
-  frontend:
+  front-end:
     build:
       context: ./front-end
       dockerfile: Dockerfile
