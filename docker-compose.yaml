@@ -1,3 +1,5 @@
+version: "3.9"
+
 services:
   quarkus:
     build:
@@ -13,14 +15,14 @@ services:
       PGPASSWORD: ${DB_PASS}
       PGSSLMODE: ${DB_SSLMODE}
       PG_SCHEMA: ${DB_SCHEMA}
-      # ---- Mail (seu AuthResource.kt/Service usa quarkus-mailer) ----
+      # ---- Mail ----
       MAIL_USER: ${MAIL_USER}
       MAIL_PASS: ${MAIL_PASS}
       MAIL_HOST: ${MAIL_HOST:-smtp.office365.com}
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-REQUIRED}
       MAIL_SSL: ${MAIL_SSL:-false}
-      # ---- App / JWT (ajuste se usar) ----
+      # ---- App / JWT ----
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change}
       CHUNK_SIZE: ${CHUNK_SIZE:-10000}
       TRUNCATE_DEST: ${TRUNCATE_DEST:-false}
@@ -28,22 +30,21 @@ services:
     ports:
       - "8080:8080"
     networks: [appnet]
-    
+
   frontend:
     build:
       context: ./front-end
       dockerfile: Dockerfile
     working_dir: /app/front-end
     command: ["sh","-lc","npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
-    ports:
-      - "5173:5173"
+    # não precisa mais expor 5173 pro host, só pra rede interna:
+    expose:
+      - "5173"
     env_file:
       - ./.env
     environment:
-      # expõe ao Vite (browser)
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
-      # monta URL absoluta p/ API: http://localhost:8080/api
       VITE_API_BASE: "${API_TARGET}"
       VITE_HMR_HOST: "localhost"
       VITE_HMR_PORT: "5173"
@@ -56,19 +57,21 @@ services:
       - ./:/app
       - /app/front-end/node_modules
       - /app/front-end/.vite
+
   nginx:
     image: nginx:alpine
     container_name: nginx
     depends_on:
-      - front-end
+      - frontend
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx:/etc/nginx/conf.d
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
     restart: unless-stopped
+    networks: [appnet]
 
   certbot:
     image: certbot/certbot
@@ -76,5 +79,11 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-var:/var/www/certbot
+    networks: [appnet]
+
 networks:
   appnet: {}
+
+volumes:
+  certbot-etc:
+  certbot-var:
