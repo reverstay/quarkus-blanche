@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
 
   const targetHost = isDocker
     ? "http://quarkus:8080"
-    : env.API_TARGET || "http://localhost:8080";
+    : env.API_TAssRGET || "http://localhost:8080";
 
   const proxy: Record<string, any> = {};
 
