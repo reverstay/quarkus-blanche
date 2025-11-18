@@ -56,19 +56,19 @@ services:
       - ./:/app
       - /app/front-end/node_modules
       - /app/front-end/.vite
-nginx:
-  image: nginx:alpine
-  container_name: nginx
-  depends_on:
-    - front-end
-  ports:
-    - "80:80"
-    - "443:443"
-  volumes:
-    - ./nginx/conf.d:/etc/nginx/conf.d
-    - certbot-etc:/etc/letsencrypt
-    - certbot-var:/var/www/certbot
-  restart: unless-stopped
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    depends_on:
+      - front-end
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - certbot-etc:/etc/letsencrypt
+      - certbot-var:/var/www/certbot
+    restart: unless-stopped
 
   certbot:
     image: certbot/certbot
