@@ -6,7 +6,7 @@ enum class Role(val code: Short) {
     FUNCIONARIO(3);
 
     companion object {
-        fun fromCode(code: Short?): Role =
+        fun getId(code: Short?): Role =
             values().find { it.code == code } ?: FUNCIONARIO
     }
 }

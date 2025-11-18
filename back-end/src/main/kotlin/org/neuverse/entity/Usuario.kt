@@ -4,6 +4,7 @@ import jakarta.persistence.*
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
+import org.neuverse.enums.Role
 
 @Entity
 @Table(name = "usuarios", schema = "core")
@@ -24,7 +25,7 @@ class Usuario(
 
     // 👇 agora mapeado como INT (Postgres int2 → Int em Kotlin)
     @Column(name = "cargo", nullable = false)
-    var cargo: Int = 3,    // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
+    var cargo: Role = Role.FUNCIONARIO,    // 0=ADMIN, 1=DIRETOR, 2=FUNCIONARIO
 
     @Column(name = "criado_em", nullable = false)
     var criadoEm: OffsetDateTime = OffsetDateTime.now(ZoneOffset.UTC),

@@ -32,7 +32,7 @@ export default function NovaEmpresa() {
   const perfil = getStoredPerfil();
   const cargoNum = perfil?.role != null ? Number(perfil.role) : null;
   const cargoLabel = cargoToLabel(cargoNum);
-  const isAdmin = cargoLabel === "ADMIN";
+  const isAdmin = Number(perfil.role)==0?true:false;
 
   const [nome, setNome] = useState("");
   const [selectedDiretores, setSelectedDiretores] = useState<string[]>([]);
@@ -82,9 +82,8 @@ export default function NovaEmpresa() {
         setLoadingDiretores(true);
         setErrDiretores(null);
 
-        // backend: GET /usuarios?cargo=2  (2 = DIRETOR)
-        const data = await apiGet<DiretorDTO[]>("/usuarios?cargo=2", token);
-
+        const data = await apiGet<DiretorDTO[]>("/usuarios?cargo=DIRETOR", token);
+        console.log(token);
         if (!mounted) return;
         setDiretores(data ?? []);
       } catch (e: any) {
@@ -153,7 +152,7 @@ export default function NovaEmpresa() {
           <div>
             <h2 className="mb-1">Nova Empresa</h2>
             <p className="text-muted mb-0">
-              Cadastre uma nova empresa da rede Blanche e vincule diretores.
+              Cadastre uma nova empresa e vincule diretores.
             </p>
           </div>
           <button

@@ -46,7 +46,7 @@ function AdminGate({ children }: { children: React.ReactNode }) {
   const perfil = getPerfil();
   const cargo = Number(perfil?.role ?? 0);
 
-  const isAdmin = cargo === 1; // 1 = ADMIN
+  const isAdmin = cargo === 0; // 1 = ADMIN
 
   if (!isAdmin) {
     return <Navigate to="/home" replace />;
@@ -125,7 +125,6 @@ export default function AppRoutes() {
             />
 
 
-      {/* Admin + subrotas protegidas por JWT + cargo=1 */}
       <Route
         path="/admin"
         element={

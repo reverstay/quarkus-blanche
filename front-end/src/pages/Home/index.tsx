@@ -60,9 +60,9 @@ export default function Home() {
 
   const perfil = getPerfil();
   const cargoNum = perfil?.role != null ? Number(perfil.role) : 0;
-  const isAdmin = cargoNum === 1;
-  const isDiretor = cargoNum === 2;
-  const isFuncionario = cargoNum === 3; // por enquanto não usamos, mas é bom já deixar
+  const isAdmin = cargoNum === 0;
+  const isDiretor = cargoNum === 1;
+  const isFuncionario = cargoNum === 2; // por enquanto não usamos, mas é bom já deixar
 
   // ====== estado para Supabase (pedidos) ======
   const [settings, setSettings] = useState<AppSettings | null>(null);

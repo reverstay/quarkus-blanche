@@ -14,6 +14,7 @@ import org.neuverse.entity.Unidade
 import org.neuverse.repository.EmpresaRepository
 import org.neuverse.repository.UnidadeRepository
 import org.neuverse.repository.UsuarioRepository
+import org.neuverse.enums.Role
 import java.util.UUID
 
 @Path("/empresas")
@@ -75,7 +76,7 @@ class EmpresaResource @Inject constructor(
         if (dto.diretoresIds.isNotEmpty()) {
             val diretores = dto.diretoresIds
                 .mapNotNull { usuarioRepo.findByIdUuid(it) }
-                .filter { it.cargo == 2 } // 2 = DIRETOR (int2)
+                .filter { it.cargo == Role.DIRETOR } // 2 = DIRETOR (int2)
 
             empresa.diretores.addAll(diretores)
         }

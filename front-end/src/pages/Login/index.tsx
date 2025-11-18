@@ -42,12 +42,14 @@ export default function Login() {
         email,
         senha: password, // bate com LoginRequestDTO do backend
       });
-
       const token = resp.token;
+      console.log(`token: ${token}`)
+
+
       if (!token || !resp.usuario) {
         throw new Error("Resposta inesperada do servidor de login.");
       }
-
+        console.log(resp.usuario)
       // 2) Guardar token pra chamadas futuras
       localStorage.setItem("blanche:token", token);
 

@@ -3,11 +3,12 @@ package org.neuverse.dto
 import org.neuverse.entity.Usuario
 import java.time.OffsetDateTime
 import java.util.UUID
+import org.neuverse.enums.Role
 
 data class UsuarioCreateDTO(
     val nome: String = "",
     val email: String = "",
-    val cargo: Int = 3,  // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
+    val cargo: Role = Role.FUNCIONARIO,  // 1=ADMIN, 2=DIRETOR, 3=FUNCIONARIO
     val senha: String = ""
 )
 
@@ -15,7 +16,7 @@ data class UsuarioResponseDTO(
     val id: UUID,
     val nome: String,
     val email: String,
-    val cargo: Int,
+    val cargo: Role,
     val online: Boolean,
     val emailVerificado: Boolean,
     val twoFactorEnabled: Boolean,

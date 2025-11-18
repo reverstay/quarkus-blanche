@@ -6,7 +6,7 @@ export type UsuarioResponseDTO = {
   id: string;
   nome: string;
   email: string;
-  cargo: number;      // int2 no banco → number no front
+  cargo: RoleName;      // int2 no banco → number no front
   online: boolean;
   emailVerificado: boolean;
   twoFactorEnabled: boolean;
@@ -93,8 +93,8 @@ export function getStoredToken(): string | null {
  */
 export function cargoToLabel(cargo: number | null | undefined): "ADMIN" | "DIRETOR" | "FUNCIONARIO" | "DESCONHECIDO" {
   const c = Number(cargo);
-  if (c === 1) return "ADMIN";
-  if (c === 2) return "DIRETOR";
-  if (c === 3) return "FUNCIONARIO";
+  if (c === 0) return "ADMIN";
+  if (c === 1) return "DIRETOR";
+  if (c === 2) return "FUNCIONARIO";
   return "DESCONHECIDO";
 }

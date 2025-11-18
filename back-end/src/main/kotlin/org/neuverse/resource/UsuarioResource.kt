@@ -1,5 +1,6 @@
 package org.neuverse.resource
 
+import jakarta.annotation.security.RolesAllowed
 import jakarta.enterprise.context.RequestScoped
 import jakarta.inject.Inject
 import jakarta.transaction.Transactional
@@ -14,6 +15,7 @@ import org.neuverse.service.PasswordService
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
+import org.neuverse.enums.Role
 
 @Path("/usuarios")
 @Produces(MediaType.APPLICATION_JSON)
@@ -34,7 +36,7 @@ class UsuarioResource @Inject constructor(
      */
     @GET
     fun listAll(
-        @QueryParam("cargo") cargo: Int?
+        @QueryParam("cargo") cargo: Role?
     ): List<UsuarioResponseDTO> {
         val usuarios: List<Usuario> =
             if (cargo == null) {
