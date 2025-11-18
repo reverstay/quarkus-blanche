@@ -1,5 +1,5 @@
 services:
-  back-end:
+  quarkus:
     build:
       context: ./back-end
       dockerfile: Dockerfile
@@ -29,7 +29,7 @@ services:
       - "8080:8080"
     networks: [appnet]
 
-  front-end:
+  frontend:
     build:
       context: ./front-end
       dockerfile: Dockerfile
