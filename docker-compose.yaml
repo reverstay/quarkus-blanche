@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     env_file: .env
     environment:
+      QUARKUS_SWAGGER_UI_ALWAYS_INCLUDE: "true"
       # ---- DB (mapeados do .env) ----
       PGHOST: ${DB_HOST}
       PGPORT: ${DB_PORT}
