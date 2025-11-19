@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       host: true, // Escuta em 0.0.0.0
       port: 5173,
       strictPort: true,
-      allowedHosts: ["blanche.neuverse.com.br", "localhost"],
+      allowedHosts: ["blanche.neuverse.com.br", "localhost", "www.blanche.neuverse.com.br"],
       hmr: {
         host: hmrHost,
         protocol: hmrProtocol,
