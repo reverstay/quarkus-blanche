@@ -37,6 +37,7 @@ class JwtService(
             // claims extras que o front usa
             .claim("role", cargoNum)
             .claim("nome", usuario.nome)
+            .claim("scope", cargoNum)
             .expiresAt(expiry)
             .sign(signingKey)
     }
