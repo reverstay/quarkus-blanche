@@ -13,24 +13,18 @@ services:
       PGPASSWORD: ${DB_PASS}
       PGSSLMODE: ${DB_SSLMODE}
       PG_SCHEMA: ${DB_SCHEMA}
-      # ---- Mail ----
       MAIL_USER: ${MAIL_USER}
       MAIL_PASS: ${MAIL_PASS}
       MAIL_HOST: ${MAIL_HOST:-smtp.office365.com}
       MAIL_PORT: ${MAIL_PORT:-587}
       MAIL_STARTTLS: ${MAIL_STARTTLS:-REQUIRED}
       MAIL_SSL: ${MAIL_SSL:-false}
-      # ---- App / JWT ----
       JWT_SECRET: ${JWT_SECRET:-dev-secret-change}
       CHUNK_SIZE: ${CHUNK_SIZE:-10000}
       TRUNCATE_DEST: ${TRUNCATE_DEST:-false}
       BLOB_MODE: ${BLOB_MODE:-TEXT_BASE64}
-    # --- CORREÇÃO 1: Segurança ---
-    # Trocamos "ports" por "expose".
-    # Agora a porta 8080 só existe DENTRO do Docker (pro Nginx ver).
-    # Ninguém acessa http://blanche:8080 de fora.
-    expose:
-      - "8080"
+    ports:
+      - "8080:8080"   # API acessível em http://localhost:8080
     networks: [appnet]
 
   frontend:
@@ -39,25 +33,25 @@ services:
       dockerfile: Dockerfile
     working_dir: /app/front-end
     command: ["sh","-lc","npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
-    expose:
-      - "5173"
+    ports:
+      - "5173:5173"   # Vite acessível em http://localhost:5173
     env_file:
       - ./.env
     environment:
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
 
-      # --- CORREÇÃO 2: Caminho Relativo ---
-      # Forçamos a API a ser relativa (vai pro Nginx)
-      VITE_API_BASE: "/"
+      # Em dev, pode apontar direto pro localhost:8080
+      VITE_API_BASE: "http://localhost:8080"
 
-      # --- CORREÇÃO 3: HMR (Hot Module Replacement) ---
-      # Aqui estava o erro "localhost". Mudamos para o domínio e porta 443.
-      VITE_HMR_HOST: "blanche.neuverse.com.br"
-      VITE_HMR_PORT: "443"
-      VITE_HMR_PROTOCOL: "wss"
+      # HMR apontando pro próprio localhost
+      VITE_HMR_HOST: "localhost"
+      VITE_HMR_PORT: "5173"
+      VITE_HMR_PROTOCOL: "ws"
 
       CHOKIDAR_USEPOLLING: "true"
+      # Marca que está rodando em Docker, se quiser usar no vite.config
+      DOCKER: "1"
     depends_on:
       - quarkus
     restart: unless-stopped
@@ -66,7 +60,6 @@ services:
       - ./:/app
       - /app/front-end/node_modules
       - /app/front-end/.vite
-
 
 networks:
   appnet: {}
