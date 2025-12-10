@@ -1,4 +1,5 @@
 services:
+  # --- BACKEND ---
   quarkus:
     build:
       context: ./back-end
@@ -23,34 +24,40 @@ services:
       CHUNK_SIZE: ${CHUNK_SIZE:-10000}
       TRUNCATE_DEST: ${TRUNCATE_DEST:-false}
       BLOB_MODE: ${BLOB_MODE:-TEXT_BASE64}
-    ports:
-      - "8080:8080"   # API acessível em http://localhost:8080
+    # Mudamos de 'ports' para 'expose'.
+    # A porta 8080 só fica disponível DENTRO da rede do Docker para o Nginx acessar.
+    expose:
+      - "8080"
     networks: [appnet]
 
+  # --- FRONTEND ---
   frontend:
     build:
       context: ./front-end
       dockerfile: Dockerfile
     working_dir: /app/front-end
     command: ["sh","-lc","npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
-    ports:
-      - "5173:5173"   # Vite acessível em http://localhost:5173
+    # Também mudamos para 'expose'. O acesso externo será via Nginx.
+    expose:
+      - "5173"
     env_file:
       - ./.env
     environment:
       VITE_SUPABASE_URL: ${VITE_SUPABASE_URL}
       VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY}
 
-      # Em dev, pode apontar direto pro localhost:8080
-      VITE_API_BASE: "http://localhost:8080"
+      # [IMPORTANTE] Deixe vazio. O navegador vai chamar http://localhost/auth/login
+      # O Nginx vai pegar isso e mandar para o backend.
+      VITE_API_BASE: ""
 
-      # HMR apontando pro próprio localhost
+      # [IMPORTANTE] Configuração do HMR (Hot Reload)
+      # O navegador acessa o site via localhost na porta 80 (Nginx).
+      # O Nginx faz o proxy do WebSocket para a porta 5173 interna.
       VITE_HMR_HOST: "localhost"
-      VITE_HMR_PORT: "5173"
+      VITE_HMR_PORT: "80"
       VITE_HMR_PROTOCOL: "ws"
 
       CHOKIDAR_USEPOLLING: "true"
-      # Marca que está rodando em Docker, se quiser usar no vite.config
       DOCKER: "1"
     depends_on:
       - quarkus
@@ -60,6 +67,20 @@ services:
       - ./:/app
       - /app/front-end/node_modules
       - /app/front-end/.vite
+
+  # --- NGINX (GATEWAY) ---
+  nginx:
+    image: nginx:alpine
+    # Esta é a ÚNICA porta exposta para o seu computador.
+    ports:
+      - "80:80"
+    volumes:
+      # Montamos o arquivo de configuração que criamos acima
+      - ./nginx/blanche.dev.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - frontend
+      - quarkus
+    networks: [appnet]
 
 networks:
   appnet: {}
