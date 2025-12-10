@@ -16,6 +16,7 @@ import org.neuverse.repository.UnidadeRepository
 import org.neuverse.repository.UsuarioRepository
 import org.neuverse.enums.Role
 import java.util.UUID
+import io.quarkus.security.Authenticated
 
 @Path("/empresas")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -48,7 +49,8 @@ class EmpresaResource @Inject constructor(
      */
     @GET
     @Path("/minhas")
-    @RolesAllowed("ADMIN", "DIRETOR")
+    //@Authenticated
+    @RolesAllowed("empresa.listar")
     fun minhasEmpresas(): List<EmpresaResponseDTO> {
         val userId = currentUserId()
 

@@ -35,9 +35,9 @@ class JwtService(
             // grupos usados pelo @RolesAllowed
             .groups(setOf(cargoStr))
             // claims extras que o front usa
-            .claim("role", cargoNum)
-            .claim("nome", usuario.nome)
-            .claim("scope", cargoNum)
+            //.claim("role", cargoNum)
+            //.claim("nome", usuario.nome)
+            .claim("scope", "empresa.listar")
             .expiresAt(expiry)
             .sign(signingKey)
     }
